@@ -1,0 +1,60 @@
+#set( $symbol_pound = '#' )
+#set( $symbol_dollar = '$' )
+#set( $symbol_escape = '\' )
+spring:
+  application:
+    name: '@project.parent.artifactId@'
+  profiles:
+    active: local
+    common-yml-group: '@common.yml.group@'
+  cloud:
+    nacos:
+      server-addr: leelen-nacos:8848
+      username: nacos
+      password: nacos
+  main:
+    allow-bean-definition-overriding: true
+
+logging:
+  config: classpath:logback-logstash.xml
+
+---
+spring:
+  profiles: local
+  config:
+    location: '@all.path@'
+  cloud:
+    nacos:
+      config:
+        enabled: false
+
+---
+spring:
+  profiles: dev,test1,test,prod,tprod
+  cloud:
+    nacos:
+      config:
+        encode: UTF-8
+        name: ${symbol_dollar}{spring.application.name}
+        file-extension: yaml
+        group: ${symbol_dollar}{spring.profiles.active}
+        refresh-enabled: true
+        extension-configs:
+          - data-id: application-sys.yaml
+            group: ${symbol_dollar}{spring.profiles.common-yml-group}
+            refresh: true
+          - data-id: application-sys.yaml
+            group: ${symbol_dollar}{spring.profiles.active}
+            refresh: true
+          - data-id: application-common.yaml
+            group: ${symbol_dollar}{spring.profiles.common-yml-group}
+            refresh: true
+          - data-id: application-common.yaml
+            group: ${symbol_dollar}{spring.profiles.active}
+            refresh: true
+          - data-id: ${symbol_dollar}{spring.application.name}.yaml
+            group: common
+            refresh: true
+          - data-id: application.yaml
+            group: ${symbol_dollar}{spring.profiles.active}
+            refresh: true

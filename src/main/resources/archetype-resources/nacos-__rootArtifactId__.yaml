@@ -1,0 +1,311 @@
+#servlet path setting
+application:
+  servlet-path: /rest/${urlPrefix}/*
+
+#开启分布式事务
+seata:
+  enabled: true
+  enable-auto-data-source-proxy: true
+  application-id: ${spring.application.name}
+  tx-service-group: leelen_tx_group
+  config:
+    type: nacos
+    nacos:
+      serverAddr: ${spring.cloud.nacos.server-addr}
+      group: ${spring.profiles.active}
+      username: ${spring.cloud.nacos.username}
+      password: ${spring.cloud.nacos.password}
+      dataId: leelen-seata-server.yaml
+  registry:
+    type: nacos
+    nacos:
+      application: leelen-seata-server
+      server-addr: ${spring.cloud.nacos.server-addr}
+      group: SEATA_GROUP
+      username: ${spring.cloud.nacos.username}
+      password: ${spring.cloud.nacos.password}
+
+mail:
+  host: smtp.leelen.cn
+  username: monitor@leelen.cn
+  password: leelencloud@456
+  mail-from: monitor@leelen.cn
+  mail-to: ${common.notify-mail-to}
+
+mqtt:
+  broker-url: tcp://leelen-emq:11883
+  ssl-broker-url: ssl://leelen-emq:8883
+  enable: true #该组件是否开启mqtt连接
+  product-key: 16666662 #组件接入mqtt的产品key
+  product-secret: "8666666666666669" #接入mqtt的产品秘钥
+  #  slave-id: "00000011000000000004" #组件clientId
+  master-id: "00000018000000000000" #组件集群订阅的clientId
+  clean-session: true #mqtt连接是否清楚session
+  qos: 0 #mqtt默认qos
+  alive-interval: 180 #mqtt心跳间隔
+
+
+
+spring:
+  datasource:
+    name: ${sys.datasource-name}
+    url: jdbc:mysql://${sys.datasource-url}:3306/account?useUnicode=true&characterEncoding=utf-8&tinyInt1isBit=false&allowMultiQueries=true
+    username: ${sys.datasource-username}
+    password: ${sys.datasource-password}
+    type: com.alibaba.druid.pool.DruidDataSource
+    driver-class-name: com.mysql.jdbc.Driver
+    druid:
+      filters: stat
+      maxActive: 30
+      initialSize: 1
+      maxWait: 60000
+      minIdle: 1
+      timeBetweenEvictionRunsMillis: 60000
+      minEvictableIdleTimeMillis: 300000
+      validationQuery: select 'x'
+      testWhileIdle: true
+      testOnBorrow: false
+      testOnReturn: false
+      #      poolPreparedStatements: true
+      #      maxOpenPreparedStatements: 20
+      stat-view-servlet:
+        exclusions: "*.js,*.gif,*.jpg,*.png,*.css,*.ico,/druid/*"
+        enabled: true
+        url-pattern: /druid/*
+        reset-enable: false
+        allow: '*'
+        login-username: leelencloud
+        login-password: leelencloud
+
+  redis:
+    enable: true
+    database: 10
+    host: ${sys.redis-host}
+    port: 6380
+    password: ${sys.redis-password}
+    timeout: 10000
+    pool:
+      maxIdle: 8
+      maxActive: 200
+      testOnBorrow: true
+      testWhileIdle: true
+      maxWaitMillis: 100000
+      timeBetweenEvictionRunsMillis: 60000
+    second:
+      enabled: true
+      host: ${sys.redis-host}
+      port: 6380
+      password: ${sys.redis-password}
+  zipkin:
+    locator:
+      discovery:
+        enabled: true
+    enabled: true
+  sleuth:
+    sampler:
+      rate: 1
+  log:
+    slf4j:
+      enabled: false
+  scheduled:
+    enabled: false
+  rxjava:
+    schedulers:
+      hook:
+        enabled: false
+  messages:
+    basename: i18n/messages,i18n/commoncomp
+  security:
+    user:
+      name: admin
+      password: admin
+  main:
+    allow-bean-definition-overriding: true
+    #@ResponseBody修饰的返回值中如果存在java.util.Date类型，则会默认被序列化为timestamp的形式
+  jackson:
+    serialization:
+      write-dates-as-timestamps: true
+  aop:
+    proxy-target-class: true
+    auto: true
+  http:
+    encoding:
+      charset: utf-8
+      enabled: true
+      force: true
+  rabbitmq:
+    enable: true
+    host: leelen-rabbitmq
+    port: 5672
+    username: ${sys.rabbitmq-username}
+    password: ${sys.rabbitmq-password}
+    #重试机制
+    listener:
+      simple:
+        retry:
+          #开启消费者(程序出现异常的情况下会,捕获异常重试将不生效)进行重试
+          enabled: true
+          #最大重试次数
+          max-attempt: 3
+          #最大间隔时间
+          max-interval: 20000
+          #重试间隔时间 3秒
+          initial-interval: 3000
+          #乘子  重试间隔*乘子得出下次重试间隔  3s  6s  12s  24s  此处24s>20s  走20s
+          multiplier: 2
+          #重试次数超过上面的设置之后是否丢弃（false不丢弃时需要写相应代码将该消息加入死信队列）:目前默认丢弃
+          default-requeue-rejected: true
+    #kafka配置
+#  kafka:
+#    enable: true
+#    bootstrap-servers: ${sys.kafka-servers}
+#    producer:
+#      #kafka producer 发送消息失败时候的重试次数
+#      retries: 3
+#      # 每次批量发送消息的数量,produce积累到一定数据，一次发送
+#      batch-size: 16384
+#      # produce积累数据一次发送，缓存大小达到buffer.memory就发送数据
+#      buffer-memory: 33554432
+#      properties:
+#        #指定了生产者在发送批次前等待更多消息加入批次的时间
+#        linger.ms: 5
+#      acks: all
+#      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+#      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+#    consumer:
+#      #是否自动提交偏移量
+#      enable-auto-commit: false
+#      group-id: defaultGroup
+#      #在偏移量无效的情况下，消费者将从起始位置读取分区的记录
+#      auto-offset-reset: earliest
+#      # 自动提交的时间间隔
+#      auto-commit-interval: 1S
+#      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+#      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+#      properties:
+#        session.timeout.ms: 30000 #consumer健康检查心跳，默认10s
+#        max.poll.interval.ms: 300000 #获取消息后提交偏移量的时间限制，默认也是5min
+#    listener:
+#      # 在侦听器容器中运行的线程数。
+#      concurrency: 5
+#      #listner负责ack，每调用一次，就立即commit
+#      ack-mode: manual
+#      # 消费监听接口监听的主题不存在时，默认会报错。所以通过设置为 false ，解决报错
+#      missing-topics-fatal: false
+#      poll-timeout: 1500
+##kafka的topic配置信息
+#kafka:
+#  topic:
+#    topicConfigList:
+#      #送达队列消息通知topic
+#      - topicName: test
+#        partitionNums: 3
+#        repPartitionNums: 1
+#mybatis setting
+mybatis:
+  config-location: classpath:mybatis-config.xml
+  mapper-locations:  classpath:mybatis/*/*Mapper.xml,classpath*:/mapper/**/*Mapper.xml,classpath*:/mapper/**/*Dao.xml
+#security setting
+management:
+  server:
+    port: 9186
+    ssl:
+      enabled: false
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+  endpoint:
+    health:
+      show-details: ALWAYS
+#feign setting
+feign:
+  service-uuid: iot
+  hystrix:
+    enabled: true
+  httpclient:
+    enabled: true
+  service-id:
+    ${rootArtifactId}: ${rootArtifactId}
+
+
+#hystrix setting
+hystrix:
+  command:
+    default:
+      execution:
+        isolation:
+          thread:
+            timeoutInMilliseconds: 40000
+      metrics:
+        healthSnapshot:
+          intervalInMilliseconds: 5000
+  threadpool:
+    default:
+      coreSize: 10
+      maximumSize: 30
+      maxQueueSize: 100
+      queueSizeRejectionThreshold: 100
+#ribbon setting
+ribbon:
+  NFLoadBalancerRuleClassName: com.netflix.loadbalancer.RandomRule
+  MaxAutoRetriesNextServer: 0
+  ReadTimeout: 30000
+  ConnectTimeout: 10000
+  MaxAutoRetries: 0
+jasypt:
+  encryptor:
+    password: leelencloud
+xxl:
+  job:
+    admin:
+      addresses: http://leelen-xxljob:9137/rest/job
+    executor:
+      ip:
+      port: ${xxl.job-executor-port}
+      logpath: /home/leelencloud/xxljob/logs/${xxl.job-executor-appname}
+      appname: ${xxl.job-executor-appname}
+      address:
+      logretentiondays: 14
+    accessToken: ${sys.xxl-job-accessToken}
+  deviceLogUploadPath: /home/leelencloud/${xxl.job-executor-appname}/upload/log/
+  enabled: false
+  job-executor-port: 9306
+  job-executor-appname: ${rootArtifactId}
+
+server:
+  port: 9180
+  tomcat:
+    max-http-header-size: 3145728
+    accesslog:
+      enabled:  ${sys.server-tomcat-accesslog-enabled}
+      directory: ${leelencloud.basedir}/${spring.application.name}/logs/tomcat/
+    max-threads: 2000
+    max-connections: 2000
+    accept-count: 2000
+    maxKeepAliveRequests: 300
+    #min-spare-threads: 500
+    connection-timeout: 60000
+    protocol-header: x-forwarded-proto
+apache:
+  httpclient:
+    socketTimeout: 60000
+    connTimeout: 60000
+    timeTolive: 60
+    maxTotal: 100
+    defaultMaxPerRoute: 50
+    idleTimeout: 20
+# rabbitmq配置
+rabbitmq:
+  config:
+    rabbitInfoList:
+      # 测试
+      - routeKey: test.routing.key
+        queueList:
+          - name: test.queue
+        exchange:
+          name: test.exchange
+          type: direct
+    produceBatchSize: 20
+    customerBatchSize: 20
+    receiveTimeout: 50

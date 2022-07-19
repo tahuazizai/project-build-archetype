@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+	<!-- 配置 脱敏处理Converter 日志过长(2048)则不处理避免影响性能-->
+	<springProperty scope="context" name="sensitivity-level" source="plateform.sensitivity-level" defaultValue="0"/>
+	<springProperty scope="context" name="phone-pattern" source="plateform.log-sensitive.phone-pattern" />
+	<springProperty scope="context" name="id-pattern" source="plateform.log-sensitive.id-pattern" />
+	<conversionRule conversionWord="msg" converterClass="${package}.converter.SensitiveConverter"/>
+	<!--
+       说明：
+       1、日志级别及文件
+           日志记录采用分级记录，级别与日志文件名相对应，不同级别的日志信息记录到不同的日志文件中
+           例如：error级别记录到log_error_xxx.log或log_error.log（该文件为当前记录的日志文件），而log_error_xxx.log为归档日志，
+           日志文件按日期记录，同一天内，若日志文件大小等于或大于2M，则按0、1、2...顺序分别命名
+           例如log-level-2013-12-21.0.log
+           其它级别的日志也是如此。
+       2、Appender
+           FILEERROR对应error级别，文件名以log-error-xxx.log形式命名
+           FILEINFO对应info级别，文件名以log-info-xxx.log形式命名
+           stdout将日志信息输出到控制上，为方便开发测试使用
+    -->
+	<springProperty scope="context" name="APP_NAME" source="spring.application.name" defaultValue="leelencloud"/>
+	<springProperty scope="context" name="LOGSTASH_DEST" source="logstash.destination" defaultValue="NO"/>
+	<springProperty scope="context" name="DAOPATH" source="dao.path" defaultValue="NO"/>
+	<contextName>${APP_NAME}</contextName>
+	<!--设置系统日志目录-->
+	<property name="LOG_HOME" value="/home/leelencloud/${APP_NAME}/logs" />
+	<!-- 本地环境 -->
+	<springProfile name="local">
+		<!-- 日志记录器，日期滚动记录  输出ERROR 级别以上的日志-->
+		<appender name="FILEERROR" class="ch.qos.logback.core.rolling.RollingFileAppender">
+			<!-- 正在记录的日志文件的路径及文件名 -->
+			<!--<file>d:/logs/account-center/account-center_error.log</file>-->
+            <file>${LOG_HOME}/${APP_NAME}_error.log</file>
+			<!-- 日志记录器的滚动策略，按日期，按大小记录 -->
+			<rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+				<!-- 归档的日志文件的路径，例如今天是2013-12-21日志，当前写的日志文件路径为file节点指定，可以将此文件与file指定文件路径设置为不同路径，从而将当前日志文件或归档日志文件置不同的目录。
+                而2013-12-21的日志文件在由fileNamePattern指定。%d{yyyy-MM-dd}指定日期格式，%i指定索引 -->
+				<!--<fileNamePattern>d:/logs/account-center/account-center_error.%d{yyyy-MM-dd}.%i.log</fileNamePattern>-->
+				<fileNamePattern>${LOG_HOME}/${APP_NAME}_error.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+				<!-- each file should be at most 20MB, keep 60 days worth of history, but at most 2GB -->
+				<maxFileSize>20MB</maxFileSize>
+				<maxHistory>60</maxHistory>
+				<totalSizeCap>2GB</totalSizeCap>
+			</rollingPolicy>
+			<!-- 追加方式记录日志 -->
+			<append>true</append>
+			<!-- 日志文件的格式 -->
+			<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+				<pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} [%X{RequestId}] - %msg%n</pattern>
+				<charset>utf-8</charset>
+			</encoder>
+			<!-- 此日志文件只记录error级别的 -->
+			<filter class="ch.qos.logback.classic.filter.LevelFilter">
+				<level>error</level>
+				<onMatch>ACCEPT</onMatch>
+				<onMismatch>DENY</onMismatch>
+			</filter>
+		</appender>
+
+		<!-- 日志记录器，日期滚动记录  输出DEBUG级别以上的日志到account.log-->
+		<appender name="ROLLING" class="ch.qos.logback.core.rolling.RollingFileAppender">
+			<!-- 正在记录的日志文件的路径及文件名 -->
+			<!--<file>d:/logs/account-center/account-center.log</file>-->
+			<file>${LOG_HOME}/${APP_NAME}.log</file>
+			<!-- 日志记录器的滚动策略，按日期，按大小记录 -->
+			<rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+				<!--&lt;!&ndash; 归档的日志文件的路径，例如今天是2013-12-21日志，当前写的日志文件路径为file节点指定，可以将此文件与file指定文件路径设置为不同路径，从而将当前日志文件或归档日志文件置不同的目录。
+                而2013-12-21的日志文件在由fileNamePattern指定。%d{yyyy-MM-dd}指定日期格式，%i指定索引 &ndash;&gt;-->
+				<!--<fileNamePattern>d:/logs/account-center/account-center.%d{yyyy-MM-dd}.%i.log</fileNamePattern>-->
+				<fileNamePattern>${LOG_HOME}/${APP_NAME}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+				<!-- each file should be at most 20MB, keep 60 days worth of history, but at most 3GB -->
+				<maxFileSize>20MB</maxFileSize>
+				<maxHistory>60</maxHistory>
+				<totalSizeCap>3GB</totalSizeCap>
+			</rollingPolicy>
+			<!-- 追加方式记录日志 -->
+			<append>true</append>
+			<!-- 日志文件的格式 -->
+			<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+				<pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} [%X{RequestId}] - %msg%n</pattern>
+				<charset>utf-8</charset>
+			</encoder>
+		</appender>
+		<appender name ="ASYNC" class= "ch.qos.logback.classic.AsyncAppender">
+			<!-- 不丢失日志.默认的,如果队列的80%已满,则会丢弃TRACT、DEBUG、INFO级别的日志 -->
+			<discardingThreshold>0</discardingThreshold>
+			<!-- 更改默认的队列的深度,该值会影响性能.默认值为256 -->
+			<queueSize>516</queueSize>
+			<!-- 添加附加的appender,最多只能添加一个 -->
+			<appender-ref ref ="ROLLING"/>
+		</appender>
+		<!--输出信息到控制台-->
+		<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+			<encoder>
+				<pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} [%X{RequestId}] - %msg%n</pattern>
+				<charset>utf-8</charset>
+			</encoder>
+		</appender>
+		<appender name="LOGSTASH" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
+			<destination>${LOGSTASH_DEST}</destination>
+			<encoder charset="UTF-8" class="net.logstash.logback.encoder.LogstashEncoder">
+				<customFields>{"appname":"${APP_NAME}"}</customFields>
+			</encoder>
+		</appender>
+		<!-- 生产环境下，将此级别配置为适合的级别，以免日志文件太多或影响程序性能 -->
+		<if condition='property("LOGSTASH_DEST").equals("NO")'>
+        <then>
+		<root level="info">
+			<appender-ref ref="STDOUT" />
+			<appender-ref ref="FILEERROR" />
+			<appender-ref ref="ASYNC" />
+		</root>
+		</then>
+		<else>
+		<root level="info">
+			<appender-ref ref="FILEERROR" />
+			<appender-ref ref="ROLLING" />
+			<appender-ref ref="LOGSTASH"/>
+		</root>
+		</else>
+		</if>
+	</springProfile>
+
+	<!-- Linux环境 -->
+	<springProfile name="dev,test,test1,test2,prod,tprod">
+		<!-- 日志记录器，日期滚动记录  输出ERROR 级别以上的日志-->
+		<appender name="FILEERROR" class="ch.qos.logback.core.rolling.RollingFileAppender">
+			<!-- 正在记录的日志文件的路径及文件名 -->
+			<file>${LOG_HOME}/${APP_NAME}_error.log</file>
+			<!-- 日志记录器的滚动策略，按日期，按大小记录 -->
+			<rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+				<!-- 归档的日志文件的路径，例如今天是2013-12-21日志，当前写的日志文件路径为file节点指定，可以将此文件与file指定文件路径设置为不同路径，从而将当前日志文件或归档日志文件置不同的目录。
+                而2013-12-21的日志文件在由fileNamePattern指定。%d{yyyy-MM-dd}指定日期格式，%i指定索引 -->
+				<fileNamePattern>${LOG_HOME}/${APP_NAME}_error.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+				<!-- each file should be at most 20MB, keep 60 days worth of history, but at most 2GB -->
+				<maxFileSize>20MB</maxFileSize>
+				<maxHistory>60</maxHistory>
+				<totalSizeCap>2GB</totalSizeCap>
+			</rollingPolicy>
+			<!-- 追加方式记录日志 -->
+			<append>true</append>
+			<!-- 日志文件的格式 -->
+			<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+				<pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} [%X{RequestId}] - %msg%n</pattern>
+				<charset>utf-8</charset>
+			</encoder>
+			<!-- 此日志文件只记录error级别的 -->
+			<filter class="ch.qos.logback.classic.filter.LevelFilter">
+				<level>error</level>
+				<onMatch>ACCEPT</onMatch>
+				<onMismatch>DENY</onMismatch>
+			</filter>
+		</appender>
+
+		<!-- 日志记录器，日期滚动记录  输出DEBUG级别以上的日志到account.log-->
+		<appender name="ROLLING" class="ch.qos.logback.core.rolling.RollingFileAppender">
+			<!-- 正在记录的日志文件的路径及文件名 -->
+			<file>${LOG_HOME}/${APP_NAME}.log</file>
+			<!-- 日志记录器的滚动策略，按日期，按大小记录 -->
+			<rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+				<!--&lt;!&ndash; 归档的日志文件的路径，例如今天是2013-12-21日志，当前写的日志文件路径为file节点指定，可以将此文件与file指定文件路径设置为不同路径，从而将当前日志文件或归档日志文件置不同的目录。
+                而2013-12-21的日志文件在由fileNamePattern指定。%d{yyyy-MM-dd}指定日期格式，%i指定索引 &ndash;&gt;-->
+				<fileNamePattern>${LOG_HOME}/${APP_NAME}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+				<!-- each file should be at most 20MB, keep 60 days worth of history, but at most 3GB -->
+				<maxFileSize>20MB</maxFileSize>
+				<maxHistory>60</maxHistory>
+				<totalSizeCap>3GB</totalSizeCap>
+			</rollingPolicy>
+			<!-- 追加方式记录日志 -->
+			<append>true</append>
+			<!-- 日志文件的格式 -->
+			<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+				<pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} [%X{RequestId}] - %msg%n</pattern>
+				<charset>utf-8</charset>
+			</encoder>
+		</appender>
+		<appender name ="ASYNC" class= "ch.qos.logback.classic.AsyncAppender">
+			<!-- 不丢失日志.默认的,如果队列的80%已满,则会丢弃TRACT、DEBUG、INFO级别的日志 -->
+			<discardingThreshold>0</discardingThreshold>
+			<!-- 更改默认的队列的深度,该值会影响性能.默认值为256 -->
+			<queueSize>516</queueSize>
+			<!-- 添加附加的appender,最多只能添加一个 -->
+			<appender-ref ref ="ROLLING"/>
+		</appender>
+		<!--输出信息到控制台-->
+		<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+			<encoder>
+				<pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} [%X{RequestId}] - %msg%n</pattern>
+				<charset>utf-8</charset>
+			</encoder>
+		</appender>
+		<!--输出sql-->
+		<appender name="DRUIDSQL" class="ch.qos.logback.core.rolling.RollingFileAppender">
+			<!-- 日志文件的路径及文件名 -->
+			<file>${LOG_HOME}/${APP_NAME}_sql.log</file>
+			<!-- 追加方式记录日志 -->
+			<append>true</append>
+			<!-- 日志记录器的滚动策略，按日期，按大小记录 -->
+			<rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+				<fileNamePattern>${LOG_HOME}/${APP_NAME}_sql.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+				<maxFileSize>10MB</maxFileSize>
+				<maxHistory>30</maxHistory>
+				<totalSizeCap>2GB</totalSizeCap>
+			</rollingPolicy>
+			<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+				<pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} [%X{RequestId}] - %msg%n</pattern>
+				<charset>utf-8</charset>
+			</encoder>
+		</appender>
+		<logger name="${DAOPATH}" level="error" additivity="false">
+			<appender-ref ref="DRUIDSQL"/>
+		</logger>
+		<!-- 生产环境下，将此级别配置为适合的级别，以免日志文件太多或影响程序性能 -->
+		<root level="INFO">
+			<appender-ref ref="STDOUT" />
+			<appender-ref ref="FILEERROR" />
+			<appender-ref ref="ASYNC" />
+		</root>
+	</springProfile>
+</configuration>
